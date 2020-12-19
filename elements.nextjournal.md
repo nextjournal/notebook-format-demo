@@ -1,0 +1,438 @@
+# Elements of a Nextjournal Article
+
+<h2 class="pm-node nj-subtitle">A Comprehensive List of All Available Content Types</h2>
+
+<p class="pm-node nj-authors">Philipp Markovics</p>
+
+# Paragraphs and Lists
+
+The paragraph is the simplest Nextjournal node type. Internally, paragraphs use a rich-text editing component for text styles: *italic*, **bold**, `monospaced` text and [links](http://nextjournal.com).
+
+You can embed *inline nodes* in paragraphs: mathematical formulas, like $\omega = 2 \pi f$, references to a code cell’s result, like [reference][nextjournal#reference#59b63e29-4d22-4bda-ad15-9dd2bc53e03a]**,** and numbers that can be referenced in code cells, like `temperature = `[32][nextjournal#number#11fa9e08-9740-464a-baba-a75616a1e5fc]*ºC.*
+
+## Lists
+
+Lists are restricted to a single level at the moment. Typing `*` followed by a space into an empty paragraph quickly transforms the paragraph into a list:
+
+* A list items
+* followed by another list item
+
+# Sections
+
+Sections give structure to an article in a tree-like format. Sections can be nested. The section's nesting level defines its heading size and numbering.
+
+## Nesting Sections
+
+A section’s nesting level can be changed by *promoting* or *demoting* the section via its *action menu.* Hover over a section to expose the ••• menu button in the gutter. Opening the *action menu* will show a *Promote Heading* or *Demote Heading* action depending on the section’s current nesting level.
+
+### Disabling Section Numbering
+
+To disable the numerals appearing before section headings, open A*rticle Settings* and deactivate "Numbered Section Headings".
+
+# Files and Images
+
+Files can be uploaded straight to an article. Here is an example of an uploaded CSV file with global temperature data:
+
+## Files
+
+[global-temperature.csv][nextjournal#file#52345bb6-ad59-49f3-835f-cc7b513128d5]
+
+## Images
+
+If the uploaded file is an image, including SVGs, it will be rendered inline. If the image size exceeds the article’s default content width, layout controls allow expanding the image width beyond the article boundaries.
+
+Images may be captioned.
+
+### Wide Images
+
+![Anomaly2014.jpg][nextjournal#file#7df2e665-6d1e-4080-8681-acc472ab2a61]
+
+### Standard Width Image
+
+![protools9.png][nextjournal#file#bab00757-2b83-46bb-9309-ef016b773551]
+
+### Framed Images
+
+![Water.jpg][nextjournal#file#b2eeb80f-f547-419d-87d4-5389a7542577]
+
+# Code Cells
+
+Executable code cells form the core of the editor. Some cells execute remotely, on the Nextjournal cluster (Bash, Clojure, Python, R and Julia) while others execute in the browser (Javascript and ClojureScript).
+
+## Runtimes and Environments
+
+[reference][nextjournal#reference#09cb1da9-827e-40bc-b801-e4dfd985aa7d]
+
+When adding the first cell for a particular language, a *runtime* is created along with it and added to the *code panel*. New cells using the same language are appended to the previously existing runtime.
+
+Runtimes provide an isolated computational resource for code cells to run in. For remote execution, code cells that share a runtime share process state and an ephemeral filesystem in the form of a *Docker container*. Browser-based runtimes execute in a *web worker*.
+
+Remote runtimes are templated from an *environment:* a *Docker image* providing initial filesystem state, a language runtime, and preinstalled software packages.
+
+By default, each new runtime is based on the *[Nextjournal Default]()*[ environment]().
+
+### Bash Cells and Runtimes
+
+*Bash cells* exhibit special behavior. If another language runtime exists, bash cells will be appended to that runtime. This way, you can perform command line work *underneath* the language process, such as installing Python packages or downloading data.
+
+## Referencing Files
+
+As noted above, files can be uploaded directly to an article. They can be referenced in a code cell or paragraph by typing `Ctrl/Cmd+E` and selecting *the file you want to reference*.
+
+This example takes the `global-temperature.csv` file uploaded above, reads it, and returns the first character from the file.
+
+```clojure id=6e0e6115-8b5e-4317-b656-5694d00bd538
+(require '[clojure.java.io :as io])
+(with-open [reader (io/reader [reference][nextjournal#reference#23726b74-8e72-42eb-9e23-585bcc097be4])]
+  (char (.read reader)))
+```
+
+## Results
+
+Code cells, by default, display the result of the last expression and *standard output* it generates.
+
+Certain result types, like simple data structures, plots and images, are given special treatment or enhanced by the editor.
+
+Currently, Nextjournal provides the following *result viewers*:
+
+### Data (the default)
+
+If the last expression is a data structure, it's rendered as an expandable tree.
+
+```clojure id=7d4312f8-fdb2-4b0c-8312-47ae3853f095
+{:number 1
+ :string "A string"
+ :nested-map {:key-1 1 :key-2 2}
+ :nested-vector [1 2 3 [4 5 6]]}
+```
+
+### Image Results
+
+Images generated by cells are displayed automatically, under certain conditions. Here is an example of a R cell that’s generating an image of a plot.
+
+```r id=d0c6ba0e-a7c9-4830-8411-cfce86e5abf3
+svg('/results/my-plot.png')
+hist(rnorm(200, 1), breaks=100)
+dev.off()
+```
+
+![my-plot.png][nextjournal#output#d0c6ba0e-a7c9-4830-8411-cfce86e5abf3#my-plot.png]
+
+### Table Results
+
+If the results is a data frame or CSV file, it will render as table that shows the first 10 entries of the result. Here’s a R cell that renders the `mtcars` demo data:
+
+```r id=131147ed-aef3-4308-9808-aa2446469316
+mtcars
+```
+
+[__out-0.csv][nextjournal#output#131147ed-aef3-4308-9808-aa2446469316#__out-0.csv]
+
+### Console Output
+
+Process *standard output* and *standard error* are streamed to the browser, between the source code and the final result. Cell output can be toggled. This Bash cell lists the installed PyPi Python packages.
+
+```bash id=f8daae3a-f5f2-4e5c-928e-aedfe49b8b70
+pip freeze
+```
+
+## Working With Results
+
+### Writing Results to the Filesystem
+
+Files written to a runtime are only accessible from within that runtime.
+
+The special `/results` path exists for making a result file referenceable, permanent and downloadable. The cell below writes a file to `/results` and Nextjournal automatically does the rest:
+
+```bash id=7d341a00-0d77-4f04-926b-21c770b7c276
+echo "some results" >> /results/results-file.txt
+ls /results
+```
+
+[results-file.txt][nextjournal#output#7d341a00-0d77-4f04-926b-21c770b7c276#results-file.txt]
+
+### Referencing Results
+
+The file is now downloadable in the browser and can be referenced from other code cells, or even from another article. All results on the filesystem can be referenced using `Cmd/Ctrl+E` in a code cell:
+
+```bash id=5da51686-4164-44b6-b447-b668a97ae2e0
+cat [reference][nextjournal#reference#c7bf6199-58e9-4068-b297-692cfdcdcd4a]
+```
+
+### Content Addressed Storage
+
+A note on storage. It may surprise you that `results-file.txt` no longer exists in `/results`:
+
+```bash id=878e9fc4-9993-4e85-82ef-0cb40ec768be
+ls /results
+```
+
+All results are content-addressed. If `results-file.txt` is updated with new results, Nextjournal does not write over the original file. The reference, [reference][nextjournal#reference#bf447f1f-3ec7-4257-b394-86172f9c7b15], will simply point to the new results. This provides a form of version control for everything written to the filesystem.
+
+This process is invisible to the end-user while providing immense flexibility and complete reproducibility.
+
+# Code Listings
+
+Code listings are not executable — they're for showing syntax-highlighted code in a larger variety of languages.
+
+```clojure no-exec id=f97700e4-e9b0-400a-a0ee-e2552f464414
+(->> (read)
+     eval
+     prn
+     (while true))
+```
+
+## Custom Languages
+
+Code Listings also have a special option for custom languages. Selection "Custom" from the languages menu removes syntax highlighting from the code listing and allows for a custom language label.
+
+```custom no-exec id=c4c3a13c-3b14-4351-8fd3-c1a1fca58db0
+AddExp = AddExp "+" MulExp  -- plus
+         | AddExp "-" MulExp  -- minus
+         | MulExp
+```
+
+# Formula
+
+Formula can appear as block, where take up the whole width of the article, or inline, where they appear in the flow of a paragraph. Formula are written in [LaTeX](https://www.latex-project.org/) and rendered in-browser using [katex](https://github.com/Khan/KaTeX).
+
+## Block Formulas
+
+$$
+A(t) = A \sin\left(2\pi f t + \phi\right) = A \sin\left(\omega t+\phi\right),
+$$
+## Inline Formulas
+
+Here is some text showing inlined LaTeX for an amplitude$A$, a frequency$f$, and a phase $\phi$.
+
+# Embedding Tweets and Videos
+
+Insert an embed node and simply paste in a link to a tweet or YouTube or Vimeo video. If the link is recognizable, the media will show.
+
+## Tweets
+
+[embed][nextjournal#embed#30868604-b483-48d1-925a-56a5fd4c93ed]
+
+## YouTube Videos
+
+[embed][nextjournal#embed#99b6f202-eebf-4e6a-8d00-771020586620]
+
+## Vimeo Videos
+
+[embed][nextjournal#embed#d5a87d45-6166-4df7-8eaf-dae2534b53df]
+
+# Appendix
+
+Here is some content that’s initially invisible because it lives in the collapsed appendix section of this article.
+
+[nextjournal#reference#59b63e29-4d22-4bda-ad15-9dd2bc53e03a]:
+<#nextjournal#reference#59b63e29-4d22-4bda-ad15-9dd2bc53e03a>
+
+[nextjournal#number#11fa9e08-9740-464a-baba-a75616a1e5fc]:
+<#nextjournal#number#11fa9e08-9740-464a-baba-a75616a1e5fc>
+
+[nextjournal#file#52345bb6-ad59-49f3-835f-cc7b513128d5]:
+<https://nextjournal.com/data/QmdP19LtDkw97N4Cs6LddgcP4VqmS3WGzcAYCYpMFkf8TR?content-type=text/csv&node-id=52345bb6-ad59-49f3-835f-cc7b513128d5&filename=global-temperature.csv&node-kind=file>
+
+[nextjournal#file#7df2e665-6d1e-4080-8681-acc472ab2a61]:
+<https://nextjournal.com/data/QmbkR24jTpUVK5onvZ3J78WK13MAniRBmsawvGWEqWzDyL?content-type=image/jpeg&node-id=7df2e665-6d1e-4080-8681-acc472ab2a61&filename=Anomaly2014.jpg&node-kind=file>
+
+[nextjournal#file#bab00757-2b83-46bb-9309-ef016b773551]:
+<https://nextjournal.com/data/QmcoVYoNUMLGpkNvPh5ytKRrPMeM2JZm5WGo13oeUvFm8i?content-type=image/png&node-id=bab00757-2b83-46bb-9309-ef016b773551&filename=protools9.png&node-kind=file> (<p>Avid ProTools 9</p>)
+
+[nextjournal#file#b2eeb80f-f547-419d-87d4-5389a7542577]:
+<https://nextjournal.com/data/Qmd79hwKR9xSxQQYsvJj2Zm3SrvjAafw453euv7gqEfDE1?content-type=image/jpeg&node-id=b2eeb80f-f547-419d-87d4-5389a7542577&filename=Water.jpg&node-kind=file> (<p><em>&quot;Water&quot; by </em><a href="https://www.flickr.com/photos/clondike7/6712511817/in/photolist-aizEU1-fsL6px-9syr9k-beanUn-moKvwx-8N1Wpa-daY2r8-ofyhsZ-bASrB-RxxnL9-pXWr6Y-bgdYzg-ajqF73-bop3oR-7KtRAA-nNfBSN-ahpUdR-g8W5Yn-q7P1wC-KcVWaV-LbpZSJ-aCt9bU-jP3vcS-8uNvDp-nAFfjy-e6wmjC-ndbuBi-4H1DkM-93TpPg-razwT3-bpHhjs-oHDr6x-HS2qFa-bqJnaX-28CaFdj-4N8vKM-sctt9P-c2LF73-iNJ82J-K9RF3s-ohmRLt-ePa1Zr-b2anbD-8Qx6Nx-9fZCP8-oAAwRz-a3XHVZ-SsjrDW"><em>Luis Deliz on flickr</em></a></p>)
+
+[nextjournal#reference#09cb1da9-827e-40bc-b801-e4dfd985aa7d]:
+<#nextjournal#reference#09cb1da9-827e-40bc-b801-e4dfd985aa7d>
+
+[nextjournal#reference#23726b74-8e72-42eb-9e23-585bcc097be4]:
+<#nextjournal#reference#23726b74-8e72-42eb-9e23-585bcc097be4>
+
+[nextjournal#output#d0c6ba0e-a7c9-4830-8411-cfce86e5abf3#my-plot.png]:
+<https://nextjournal.com/data/QmdnGgHPhqXnkbYUfocSqu894joG1gxjCQ8PRxGP43rkh9?content-type=image/svg%2Bxml&node-id=d0c6ba0e-a7c9-4830-8411-cfce86e5abf3&filename=my-plot.png&node-kind=output>
+
+[nextjournal#output#131147ed-aef3-4308-9808-aa2446469316#__out-0.csv]:
+<https://nextjournal.com/data/QmStZfvac89RfkJEMa6BpKKMNXoodThSGb2taT85CPeL8U?content-type=text/csv&node-id=131147ed-aef3-4308-9808-aa2446469316&filename=__out-0.csv&node-kind=output>
+
+[nextjournal#output#7d341a00-0d77-4f04-926b-21c770b7c276#results-file.txt]:
+<https://nextjournal.com/data/QmbB9B95WE5pKbZENgqYMzGM23xdqQg6CgGGmQ2CnMMidt?content-type=text/plain&node-id=7d341a00-0d77-4f04-926b-21c770b7c276&filename=results-file.txt&node-kind=output>
+
+[nextjournal#reference#c7bf6199-58e9-4068-b297-692cfdcdcd4a]:
+<#nextjournal#reference#c7bf6199-58e9-4068-b297-692cfdcdcd4a>
+
+[nextjournal#reference#bf447f1f-3ec7-4257-b394-86172f9c7b15]:
+<#nextjournal#reference#bf447f1f-3ec7-4257-b394-86172f9c7b15>
+
+[nextjournal#embed#30868604-b483-48d1-925a-56a5fd4c93ed]:
+<https://twitter.com/usenextjournal/status/1019235170157723648>
+
+[nextjournal#embed#99b6f202-eebf-4e6a-8d00-771020586620]:
+<https://www.youtube.com/watch?v=yJDv-zdhzMY>
+
+[nextjournal#embed#d5a87d45-6166-4df7-8eaf-dae2534b53df]:
+<https://vimeo.com/31039323>
+
+<details id="com.nextjournal.article">
+<summary>This notebook was exported from <a href="https://nextjournal.com/a/CCWCTxDZtGE82pDVzVkzrn?change-id=CqcRAixCvcyKKWWYSUyikz">https://nextjournal.com/a/CCWCTxDZtGE82pDVzVkzrn?change-id=CqcRAixCvcyKKWWYSUyikz</a></summary>
+
+```edn nextjournal-metadata
+{:article
+ {:settings
+  {:numbered? true,
+   :sidebar? true,
+   :subtitle? true,
+   :image "nextjournal/ubuntu:17.04-075635318",
+   :authors? true},
+  :nodes
+  {"09cb1da9-827e-40bc-b801-e4dfd985aa7d"
+   {:id "09cb1da9-827e-40bc-b801-e4dfd985aa7d",
+    :kind "reference",
+    :ref-id "7c318886-4c75-4b29-81ee-eb6e805b4653"},
+   "11fa9e08-9740-464a-baba-a75616a1e5fc"
+   {:id "11fa9e08-9740-464a-baba-a75616a1e5fc",
+    :kind "number",
+    :name "temperature",
+    :value 32},
+   "131147ed-aef3-4308-9808-aa2446469316"
+   {:compute-ref #uuid "e7c87109-1475-4aa3-be1d-1920107cc85b",
+    :exec-duration 231,
+    :id "131147ed-aef3-4308-9808-aa2446469316",
+    :kind "code",
+    :output-log-lines {},
+    :runtime [:runtime "d8dcf2b9-d2ca-4eae-8105-efc8f37ce309"]},
+   "23726b74-8e72-42eb-9e23-585bcc097be4"
+   {:id "23726b74-8e72-42eb-9e23-585bcc097be4",
+    :kind "reference",
+    :link
+    [:output
+     "52345bb6-ad59-49f3-835f-cc7b513128d5"
+     "global-temperature.csv"]},
+   "52345bb6-ad59-49f3-835f-cc7b513128d5"
+   {:id "52345bb6-ad59-49f3-835f-cc7b513128d5", :kind "file"},
+   "59b63e29-4d22-4bda-ad15-9dd2bc53e03a"
+   {:id "59b63e29-4d22-4bda-ad15-9dd2bc53e03a",
+    :kind "reference",
+    :ref-id "7df2e665-6d1e-4080-8681-acc472ab2a61"},
+   "5da51686-4164-44b6-b447-b668a97ae2e0"
+   {:compute-ref #uuid "11edfab8-8a09-4fff-98e1-be2da3d9f05e",
+    :exec-duration 1313,
+    :id "5da51686-4164-44b6-b447-b668a97ae2e0",
+    :kind "code",
+    :name "snowy-king",
+    :output-log-lines {:stdout 2},
+    :runtime [:runtime "7c318886-4c75-4b29-81ee-eb6e805b4653"]},
+   "6e0e6115-8b5e-4317-b656-5694d00bd538"
+   {:compute-ref #uuid "33a56dbc-1aae-4b3c-80f8-be4fab47be59",
+    :exec-duration 265,
+    :id "6e0e6115-8b5e-4317-b656-5694d00bd538",
+    :kind "code",
+    :output-log-lines {},
+    :runtime [:runtime "c8770050-6dd3-4828-8398-76c32e696929"]},
+   "7c318886-4c75-4b29-81ee-eb6e805b4653"
+   {:environment
+    [:environment
+     {:article/nextjournal.id
+      #uuid "5b45e08b-5b96-413e-84ed-f03b5b65bd66",
+      :change/nextjournal.id
+      #uuid "5f0c0e79-790f-439a-8b18-fb81409f12c2",
+      :node/id "0149f12a-08de-4f3d-9fd3-4b7a665e8624"}],
+    :id "7c318886-4c75-4b29-81ee-eb6e805b4653",
+    :kind "runtime",
+    :language "python",
+    :name "",
+    :type :nextjournal},
+   "7d341a00-0d77-4f04-926b-21c770b7c276"
+   {:compute-ref #uuid "72e63b79-020c-4eb4-823b-db95ace96b6e",
+    :exec-duration 1270,
+    :id "7d341a00-0d77-4f04-926b-21c770b7c276",
+    :kind "code",
+    :output-log-lines {:stdout 2},
+    :runtime [:runtime "7c318886-4c75-4b29-81ee-eb6e805b4653"]},
+   "7d4312f8-fdb2-4b0c-8312-47ae3853f095"
+   {:compute-ref #uuid "8ed3b44d-0e5c-4d37-836f-535dfff22295",
+    :exec-duration 69,
+    :id "7d4312f8-fdb2-4b0c-8312-47ae3853f095",
+    :kind "code",
+    :output-log-lines {},
+    :runtime [:runtime "c8770050-6dd3-4828-8398-76c32e696929"]},
+   "7df2e665-6d1e-4080-8681-acc472ab2a61"
+   {:id "7df2e665-6d1e-4080-8681-acc472ab2a61",
+    :kind "file",
+    :layout :wide},
+   "878e9fc4-9993-4e85-82ef-0cb40ec768be"
+   {:compute-ref #uuid "6886400e-8f35-4896-a168-6dbdc46d1f9a",
+    :exec-duration 984,
+    :id "878e9fc4-9993-4e85-82ef-0cb40ec768be",
+    :kind "code",
+    :output-log-lines {},
+    :runtime [:runtime "7c318886-4c75-4b29-81ee-eb6e805b4653"]},
+   "b2eeb80f-f547-419d-87d4-5389a7542577"
+   {:id "b2eeb80f-f547-419d-87d4-5389a7542577",
+    :kind "file",
+    :layout :polaroid},
+   "bab00757-2b83-46bb-9309-ef016b773551"
+   {:id "bab00757-2b83-46bb-9309-ef016b773551", :kind "file"},
+   "bf447f1f-3ec7-4257-b394-86172f9c7b15"
+   {:id "bf447f1f-3ec7-4257-b394-86172f9c7b15",
+    :kind "reference",
+    :ref-id "7d341a00-0d77-4f04-926b-21c770b7c276",
+    :ref-var "results-file.txt"},
+   "c4c3a13c-3b14-4351-8fd3-c1a1fca58db0"
+   {:custom-language "Ohm",
+    :id "c4c3a13c-3b14-4351-8fd3-c1a1fca58db0",
+    :kind "code-listing"},
+   "c7bf6199-58e9-4068-b297-692cfdcdcd4a"
+   {:id "c7bf6199-58e9-4068-b297-692cfdcdcd4a",
+    :kind "reference",
+    :link
+    [:output
+     "7d341a00-0d77-4f04-926b-21c770b7c276"
+     "results-file.txt"]},
+   "c8770050-6dd3-4828-8398-76c32e696929"
+   {:environment
+    [:environment
+     {:article/nextjournal.id
+      #uuid "5b45eb52-bad4-413d-9d7f-b2b573a25322",
+      :change/nextjournal.id
+      #uuid "5f045c36-90bd-428b-a26c-b59fa0a2e1db",
+      :node/id "0ae15688-6f6a-40e2-a4fa-52d81371f733"}],
+    :id "c8770050-6dd3-4828-8398-76c32e696929",
+    :kind "runtime",
+    :language "clojure",
+    :type :prepl},
+   "d0c6ba0e-a7c9-4830-8411-cfce86e5abf3"
+   {:compute-ref #uuid "3ac1c739-2717-4fca-ac6e-8a204184f6f1",
+    :exec-duration 736,
+    :id "d0c6ba0e-a7c9-4830-8411-cfce86e5abf3",
+    :kind "code",
+    :output-log-lines {:stdout 3},
+    :runtime [:runtime "d8dcf2b9-d2ca-4eae-8105-efc8f37ce309"],
+    :stdout-collapsed? true},
+   "d8dcf2b9-d2ca-4eae-8105-efc8f37ce309"
+   {:environment
+    [:environment
+     {:article/nextjournal.id
+      #uuid "5b45e6f7-fe51-488a-b89b-1c8f74dfb387",
+      :change/nextjournal.id
+      #uuid "5df6989b-58ac-4d6b-9ea8-00332febe807",
+      :node/id "4e307b44-52c3-4f79-9f3d-23047859e2fa"}],
+    :id "d8dcf2b9-d2ca-4eae-8105-efc8f37ce309",
+    :kind "runtime",
+    :language "r",
+    :type :nextjournal},
+   "f8daae3a-f5f2-4e5c-928e-aedfe49b8b70"
+   {:compute-ref #uuid "9d7855a2-0714-4ac7-a345-5a0c7b074268",
+    :exec-duration 2904,
+    :id "f8daae3a-f5f2-4e5c-928e-aedfe49b8b70",
+    :kind "code",
+    :output-log-lines {:stdout 116},
+    :runtime [:runtime "7c318886-4c75-4b29-81ee-eb6e805b4653"]},
+   "f97700e4-e9b0-400a-a0ee-e2552f464414"
+   {:id "f97700e4-e9b0-400a-a0ee-e2552f464414", :kind "code-listing"}},
+  :nextjournal/id #uuid "5aafb34f-7b31-4556-8e00-7f0423a16563",
+  :article/change
+  {:nextjournal/id #uuid "5fde0d72-61dc-459b-9974-3d2b4d0ef60b"}}}
+
+```
+</details>
